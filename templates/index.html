@@ -1,0 +1,61 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Flask VoiceBot</title>
+</head>
+<body style="font-family:Arial">
+<h1>Flask VoiceBot</h1>
+<button onclick="startListening()">🎤 Start Listening</button>
+<button onclick="stopListening()">Stop</button><br><br>
+
+<textarea id="typed" placeholder="Type a question..." style="width:300px;height:80px"></textarea>
+<button onclick="sendTyped()">Send</button>
+
+<div id="chat" style="margin-top:20px"></div>
+
+<script>
+let rec=null;
+
+if('webkitSpeechRecognition' in window){
+    rec=new webkitSpeechRecognition();
+    rec.lang='en-US';
+    rec.onresult=e=>{
+        let text=e.results[0][0].transcript;
+        send(text);
+    };
+}
+
+function startListening(){ if(rec) rec.start(); }
+function stopListening(){ if(rec) rec.stop(); }
+
+function sendTyped(){
+    let t=document.getElementById('typed').value;
+    send(t);
+}
+
+function send(text){
+    add('You: '+text);
+    fetch('/api/respond',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text:text})
+    }).then(r=>r.json()).then(j=>{
+        add('Bot: '+j.reply);
+        speak(j.reply);
+    });
+}
+
+function add(t){
+    let div=document.getElementById('chat');
+    div.innerHTML += "<p>"+t+"</p>";
+}
+
+function speak(t){
+    let u=new SpeechSynthesisUtterance(t);
+    speechSynthesis.speak(u);
+}
+</script>
+</body>
+</html>
